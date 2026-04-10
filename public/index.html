@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TEST-CROW — Escrow Terminal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --border: #1e1e1e;
+      --border-bright: #2e2e2e;
+      --accent: #e8d48b;
+      --accent2: #c4a44a;
+      --green: #4ade80;
+      --red: #f87171;
+      --blue: #60a5fa;
+      --muted: #444;
+      --text: #e0e0e0;
+      --text-dim: #888;
+      --mono: 'Space Mono', monospace;
+      --display: 'Syne', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Subtle noise overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.5;
+    }
+
+    /* ── Header ── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: rgba(10,10,10,0.95);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: -0.5px;
+      color: var(--accent);
+    }
+
+    .logo span {
+      color: var(--text-dim);
+      font-weight: 400;
+      font-size: 12px;
+      margin-left: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      vertical-align: middle;
+    }
+
+    .status-dot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-dim);
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ── Layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 1px;
+      background: var(--border);
+      min-height: calc(100vh - 61px);
+    }
+
+    .panel {
+      background: var(--bg);
+      padding: 28px 32px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-family: var(--display);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .panel-sub {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* ── Form ── */
+    .field {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border-bright);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus {
+      border-color: var(--accent2);
+      box-shadow: 0 0 0 1px var(--accent2);
+    }
+
+    input::placeholder { color: var(--muted); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 20px;
+      border: 1px solid;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: transparent;
+    }
+
+    .btn-primary {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .btn-primary:hover {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn-success {
+      border-color: var(--green);
+      color: var(--green);
+    }
+    .btn-success:hover {
+      background: var(--green);
+      color: #000;
+    }
+
+    .btn-danger {
+      border-color: var(--red);
+      color: var(--red);
+    }
+    .btn-danger:hover {
+      background: var(--red);
+      color: #000;
+    }
+
+    .btn-ghost {
+      border-color: var(--border-bright);
+      color: var(--text-dim);
+    }
+    .btn-ghost:hover {
+      border-color: var(--text-dim);
+      color: var(--text);
+    }
+
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    /* ── Toast / Alert ── */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 360px;
+    }
+
+    .toast {
+      background: var(--surface);
+      border-left: 3px solid var(--accent);
+      padding: 12px 16px;
+      font-size: 12px;
+      animation: slideIn 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .toast.success { border-color: var(--green); }
+    .toast.error { border-color: var(--red); }
+
+    .toast-title {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0.6;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ── Escrow State ── */
+    #escrow-state {
+      margin-top: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 16px;
+    }
+
+    .state-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .state-row:last-child { border-bottom: none; }
+
+    .state-key {
+      color: var(--text-dim);
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+
+    .state-val {
+      font-size: 12px;
+      word-break: break-all;
+      max-width: 60%;
+      text-align: right;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      border: 1px solid;
+    }
+
+    .badge-held { color: var(--accent); border-color: var(--accent); }
+    .badge-released { color: var(--green); border-color: var(--green); }
+    .badge-refunded { color: var(--blue); border-color: var(--blue); }
+    .badge-pending { color: var(--text-dim); border-color: var(--muted); }
+
+    /* ── Ledger Panel ── */
+    .ledger-panel {
+      grid-column: 1 / -1;
+    }
+
+    .balances-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      margin-bottom: 24px;
+    }
+
+    .balance-card {
+      background: var(--surface);
+      padding: 16px 18px;
+    }
+
+    .balance-account {
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .balance-amount {
+      font-family: var(--display);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .balance-amount.negative { color: var(--red); }
+
+    /* ── Transaction log ── */
+    .tx-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .tx-table th {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .tx-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      vertical-align: middle;
+    }
+
+    .tx-table tr:hover td { background: var(--surface); }
+
+    .tx-table .tx-id {
+      font-size: 10px;
+      color: var(--text-dim);
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tx-amount.credit { color: var(--green); }
+    .tx-amount.debit { color: var(--red); }
+
+    .tx-type {
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .empty-state {
+      padding: 32px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* Divider */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0 16px;
+    }
+
+    .section-divider span {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .section-divider::before,
+    .section-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Spinners */
+    .spinner {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border: 1px solid var(--muted);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden { display: none !important; }
+
+    /* Input group for escrow actions */
+    .action-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 18px;
+      margin-bottom: 12px;
+    }
+
+    .action-title {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--accent2);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .input-btn-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-btn-row input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* Scrollable tx wrapper */
+    .tx-scroll {
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    .tx-scroll::-webkit-scrollbar { width: 4px; }
+    .tx-scroll::-webkit-scrollbar-track { background: var(--bg); }
+    .tx-scroll::-webkit-scrollbar-thumb { background: var(--border-bright); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      CROW<span>Escrow Terminal v1.0</span>
+    </div>
+    <div class="status-dot">
+      <div class="dot"></div>
+      <span>SYSTEM LIVE</span>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- ── CREATE ESCROW ── -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Create Escrow</div>
+        <div class="panel-sub">New transaction</div>
+      </div>
+
+      <div class="field">
+        <label>Buyer ID</label>
+        <input id="buyer" type="text" placeholder="alice" />
+      </div>
+      <div class="field">
+        <label>Seller ID</label>
+        <input id="seller" type="text" placeholder="bob" />
+      </div>
+      <div class="field">
+        <label>Amount</label>
+        <input id="amount" type="number" placeholder="100" min="0.01" step="0.01" />
+      </div>
+
+      <button class="btn btn-primary" id="create-btn" onclick="createEscrow()">
+        <span>→</span> Lock Funds
+      </button>
+
+      <div id="escrow-state" class="hidden">
+        <div class="state-row">
+          <span class="state-key">Escrow ID</span>
+          <span class="state-val" id="s-id" style="font-size:10px;color:var(--accent)">—</span>
+        </div>
+        <div class="state-row">
+          <span class="state-key">Buyer</span>
+          <span class="state-val" id="s-buyer">—</span>
+        </div>
+        <div class="state-row">
+          <span class="state-key">Seller</span>
+          <span class="state-val" id="s-seller">—</span>
+        </div>
+        <div class="state-row">
+          <span class="state-key">Amount</span>
+          <span class="state-val" id="s-amount">—</span>
+        </div>
+        <div class="state-row">
+          <span class="state-key">Status</span>
+          <span class="state-val" id="s-status">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ESCROW ACTIONS ── -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Escrow Actions</div>
+        <div class="panel-sub">Release / Refund</div>
+      </div>
+
+      <div class="action-block">
+        <div class="action-title">Release Funds → Seller</div>
+        <div class="input-btn-row">
+          <input id="release-id" type="text" placeholder="Escrow ID" />
+          <button class="btn btn-success" onclick="releaseEscrow()">Release</button>
+        </div>
+      </div>
+
+      <div class="action-block">
+        <div class="action-title">Refund Funds → Buyer</div>
+        <div class="input-btn-row">
+          <input id="refund-id" type="text" placeholder="Escrow ID" />
+          <button class="btn btn-danger" onclick="refundEscrow()">Refund</button>
+        </div>
+      </div>
+
+      <div class="section-divider"><span>Quick Fill</span></div>
+      <p style="font-size:11px;color:var(--text-dim);line-height:1.7">
+        After creating an escrow, the ID will be auto-filled below.
+        Copy the escrow ID from the panel on the left to use it here.
+      </p>
+      <div style="margin-top:14px">
+        <button class="btn btn-ghost" onclick="autoFillLastEscrow()">← Use Last Escrow ID</button>
+      </div>
+    </div>
+
+    <!-- ── LEDGER ── -->
+    <div class="panel ledger-panel">
+      <div class="panel-header">
+        <div class="panel-title">Ledger</div>
+        <div class="panel-sub">Balances &amp; Transactions</div>
+        <div style="margin-left:auto">
+          <button class="btn btn-ghost" onclick="refreshLedger()" id="refresh-btn">↻ Refresh</button>
+          <!--<input id="topup-user" placeholder="user" /> -->
+          <!--<input id="topup-amount" placeholder="amount" /> -->
+          <!--<button onclick="topup()">Add Funds</button> -->
+        </div>
+      </div>
+
+      <div id="balances-section">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px">Balances</div>
+        <div class="balances-grid" id="balances-grid">
+          <div class="balance-card">
+            <div class="balance-account">Loading...</div>
+            <div class="balance-amount">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px">Transaction Log</div>
+        <div class="tx-scroll">
+          <table class="tx-table">
+            <thead>
+              <tr>
+                <th>TX ID</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Amount</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody id="tx-body">
+              <tr><td colspan="5" class="empty-state">No transactions yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <script src="./main.js"></script>
+
+</body>
+</html>

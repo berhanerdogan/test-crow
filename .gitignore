@@ -2,7 +2,7 @@ node_modules/
 dist/
 venv/
 .env
-.db
+*.db
 npm-debug.log
 yarn-error.log
 *.tsbuildinfo

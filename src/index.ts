@@ -1,33 +1,22 @@
+import "dotenv/config"
 import express from "express"
 import bodyParser from "body-parser"
 import { EscrowService } from "./services/EscrowService"
 import { MockPaymentGateway } from "./services/payment/MockPaymentGateway"
 import { SQLiteAdapter } from "./adapters/SQLiteAdapter"
+import { demoAuthMiddleware } from "./middleware/demoAuthMiddleware"
 
 const app = express()
 app.use(bodyParser.json())
-app.use(express.static("public"))
 
-// Demo users — in a real app this comes from auth middleware
-const DEMO_USERS = {
-  buyer: { userID: "buyer001", userName: "sourpatch", balance: 2000, lockedBalance: 0 },
-  seller: { userID: "seller001", userName: "shopkeeper", balance: 0, lockedBalance: 0 },
+if (process.env.SERVE_DEMO === "true") {
+  app.use(express.static("public"))
+  app.use(demoAuthMiddleware)
 }
-
-app.use((req, res, next) => {
-  const role = req.headers["x-demo-role"] === "seller" ? "seller" : "buyer"
-  req.user = DEMO_USERS[role]
-  next()
-})
 
 const db = new SQLiteAdapter()
 const paymentGateway = new MockPaymentGateway()
 const escrowService = new EscrowService(db, paymentGateway)
-
-// Seed buyer balance on start if not exists
-db.getBalance("buyer001").then(b => {
-  if (b === 0) db.addBalance("buyer001", 2000)
-})
 
 // Create escrow
 app.post("/escrow/create", async (req, res) => {

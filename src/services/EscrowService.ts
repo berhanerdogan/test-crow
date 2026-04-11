@@ -3,12 +3,13 @@ import { TransactionType } from "../enums/TransactionType"
 import { EscrowStatus } from "../enums/EscrowStatus"
 import { SQLiteAdapter } from "../adapters/SQLiteAdapter"
 import { randomUUID } from "node:crypto"
+import { IDatabaseAdapter } from "../adapters/IDatabaseAdapter"
 
 export class EscrowService {
-  private db: SQLiteAdapter
+  private db: IDatabaseAdapter
   private payment: IPaymentGateway
 
-  constructor(db: SQLiteAdapter, payment: IPaymentGateway) {
+  constructor(db: IDatabaseAdapter, payment: IPaymentGateway) {
     this.payment = payment
     this.db = db
   }

@@ -11,6 +11,7 @@ export interface IDatabaseAdapter {
   saveEscrow(escrow: Escrow): Promise<void>
   getEscrow(escrowID: string): Promise<Escrow | null>
   getEscrowsBySeller(sellerID: string): Promise<Escrow[]>
+  getEscrowsByBuyer(buyerID: string): Promise<Escrow[]>
   updateEscrowStatus(escrowID: string, status: EscrowStatus): Promise<void>
 
   saveTransaction(tx: Transaction): Promise<void>

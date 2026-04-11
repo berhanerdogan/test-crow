@@ -16,7 +16,9 @@
     "skipLibCheck": true,
     "ignoreDeprecations": "6.0",
 
-    "typeRoots": ["./node_modules/@types", "./src/types"]
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+
+    "declaration": true,
 
   },
 

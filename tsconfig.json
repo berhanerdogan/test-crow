@@ -14,10 +14,14 @@
     "types": ["node"],
 
     "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
 
-    "ignoreDeprecations": "6.0"
+    "typeRoots": ["./node_modules/@types", "./src/types"]
+
   },
 
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "files":["./src/types/express/index.d.ts"],
+
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
 }

@@ -5,6 +5,11 @@ import type { Escrow } from "../interfaces/Escrow"
 import { EscrowStatus } from "../enums/EscrowStatus"
 import { TransactionType } from "../enums/TransactionType"
 
+const mockProducts = [
+  { product_id: "pineappleking", seller_id: "seller001", price: 50, product_name: "Pineapple King" },
+  { product_id: "horseshoe", seller_id: "seller001", price: 50, product_name: "Horse Shoe" }
+]
+
 export class SQLiteAdapter implements IDatabaseAdapter {
   private db: Database.Database
 
@@ -43,8 +48,16 @@ export class SQLiteAdapter implements IDatabaseAdapter {
         amount REAL NOT NULL,
         status TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        updated_at TEXT,
-        FOREIGN KEY (transaction_id) REFERENCES transactions(id)
+        updated_at TEXT
+      )
+    `).run()
+
+    this.db.prepare(`
+      CREATE TABLE IF NOT EXISTS products (
+        product_id TEXT PRIMARY KEY,
+        seller_id TEXT,
+        price REAL NOT NULL,
+        product_name TEXT
       )
     `).run()
   }
@@ -65,7 +78,7 @@ export class SQLiteAdapter implements IDatabaseAdapter {
 
   async subtractBalance(userID: string, amount: number): Promise<void> {
     const current = await this.getBalance(userID)
-    if (current < amount) throw new Error("Insufficient balance")
+    if (current < amount) throw new Error("Insufficient funds")
     this.db.prepare("UPDATE users SET balance = balance - ? WHERE id = ?").run(amount, userID)
   }
 
@@ -89,17 +102,7 @@ export class SQLiteAdapter implements IDatabaseAdapter {
     })
   }
 
-  async getEscrow(escrowID: string): Promise<Escrow | null> {
-    const row = this.db
-      .prepare("SELECT * FROM escrows WHERE id = ?")
-      .get(escrowID) as {
-        id: string; buyer_id: string; seller_id: string
-        transaction_id: string; amount: number; status: string
-        created_at: string; updated_at: string | null
-      } | undefined
-
-    if (!row) return null
-
+  private rowToEscrow(row: any): Escrow {
     return {
       escrowID: row.id,
       buyerUserID: row.buyer_id,
@@ -110,6 +113,22 @@ export class SQLiteAdapter implements IDatabaseAdapter {
       createdAt: new Date(row.created_at),
       updatedAt: row.updated_at ? new Date(row.updated_at) : undefined,
     }
+  }
+
+  async getEscrow(escrowID: string): Promise<Escrow | null> {
+    const row = this.db.prepare("SELECT * FROM escrows WHERE id = ?").get(escrowID)
+    if (!row) return null
+    return this.rowToEscrow(row)
+  }
+
+  async getEscrowsBySeller(sellerID: string): Promise<Escrow[]> {
+    const rows = this.db.prepare("SELECT * FROM escrows WHERE seller_id = ? ORDER BY created_at DESC").all(sellerID)
+    return rows.map(r => this.rowToEscrow(r))
+  }
+
+  async getEscrowsByBuyer(buyerID: string): Promise<Escrow[]> {
+    const rows = this.db.prepare("SELECT * FROM escrows WHERE buyer_id = ? ORDER BY created_at DESC").all(buyerID)
+    return rows.map(r => this.rowToEscrow(r))
   }
 
   async updateEscrowStatus(escrowID: string, status: EscrowStatus): Promise<void> {
@@ -134,11 +153,7 @@ export class SQLiteAdapter implements IDatabaseAdapter {
   }
 
   async getTransactions(): Promise<Transaction[]> {
-    const rows = this.db.prepare("SELECT * FROM transactions").all() as {
-      id: string; from_account: string; to_account: string
-      amount: number; type: string; status: string; created_at: string
-    }[]
-
+    const rows = this.db.prepare("SELECT * FROM transactions").all() as any[]
     return rows.map(row => ({
       transactionID: row.id,
       fromAccountID: row.from_account,
@@ -149,4 +164,9 @@ export class SQLiteAdapter implements IDatabaseAdapter {
       createdAt: new Date(row.created_at),
     }))
   }
-}      
+
+  async getAllProducts(): Promise<any[]> {
+    const rows = this.db.prepare("SELECT * FROM products").all()
+    return rows.length === 0 ? mockProducts : rows
+  }
+}

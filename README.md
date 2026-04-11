@@ -1,10 +1,8 @@
-
 # mock-crow
 
 A reusable escrow payment scaffold built with TypeScript, Express, and SQLite. Designed for developers who want to simulate a secure payment flow in their projects — particularly useful for school projects, hackathons, or any prototype where implementing a real payment provider is overkill, but the escrow logic itself needs to be realistic and trustworthy.
 
-Instead of skipping the payment layer entirely or hardcoding a fake transaction, mock-crow gives you a working escrow system with real state management, pluggable adapters, and a demo UI — so you can focus on your actual project while having a credible payment backbone.
-
+Instead of skipping the payment layer entirely or hardcoding a fake transaction, mock-crow gives you a working escrow system with real state management, pluggable adapters, and an optional demo UI — so you can focus on your actual project while having a credible payment backbone.
 
 ---
 
@@ -21,10 +19,10 @@ Buy → [Held] → Seller Ships → [Shipped] → Buyer Confirms → [Released]
 
 ## Getting Started
 
-### 1. Install dependencies
+### 1. Install
 
 ```bash
-npm install
+npm install github:berhanerdogan/test-crow
 ```
 
 ### 2. Create your `.env` file
@@ -39,7 +37,7 @@ cp .env.example .env
 SERVE_DEMO=true
 ```
 
-Set `SERVE_DEMO=true` to serve the demo UI and mock auth. Leave it out or set to `false` when integrating into your own project.
+Set `SERVE_DEMO=true` to serve the demo UI and mock auth. Set to `false` or omit when integrating into your own project.
 
 ### 3. Run
 
@@ -94,6 +92,10 @@ req.user = {
 ```
 
 Set `SERVE_DEMO=false` in your `.env`. The demo auth middleware will not be loaded and mock-crow will use the `req.user` set by your own middleware automatically.
+
+### Disabling the Demo UI
+
+Set `SERVE_DEMO=false` in your `.env`. This disables both the demo frontend and the mock auth middleware. mock-crow will only expose the API endpoints, leaving the UI and auth entirely up to your project.
 
 ### Swapping the Database Adapter
 

@@ -9,6 +9,7 @@
   "files": [
     "dist/",
     "src/",
+    "public/",
     ".env.example"
   ],
   "scripts": {
